@@ -819,9 +819,10 @@ class EpubWriter(object):
         'landmark_title': 'Guide'
     }
 
-    def __init__(self, name, book, options=None, spine_properties={}):
+    def __init__(self, name, book, options=None, spine_properties={}, direction="ltr"):
         self.file_name = name
         self.book = book
+        self.direction = direction
         self.spine_properties = spine_properties
 
         self.options = dict(self.DEFAULT_OPTIONS)
@@ -848,7 +849,8 @@ class EpubWriter(object):
         root = etree.Element('package',
                              {'xmlns': NAMESPACES['OPF'],
                               'unique-identifier': self.book.IDENTIFIER_ID,
-                              'version': '3.0'})
+                              'version': '3.0',
+                              'dir': self.direction})
 
         prefixes = ['rendition: http://www.idpf.org/vocab/rendition/#'] + self.book.prefixes
         root.attrib['prefix'] = ' '.join(prefixes)
