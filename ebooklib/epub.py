@@ -120,7 +120,7 @@ class EpubItem(object):
     Base class for the items in a book.
     """
 
-    def __init__(self, uid=None, file_name='', media_type='', content=six.b(''), manifest=True):
+    def __init__(self, uid=None, file_name='', media_type='', content=six.b(''), manifest=True, meta=False):
         """
         :Args:
           - uid: Unique identifier for this item (optional)
@@ -135,7 +135,7 @@ class EpubItem(object):
         self.content = content
         self.is_linear = True
         self.manifest = manifest
-
+        self.meta = meta
         self.book = None
 
     def get_id(self):
@@ -247,6 +247,7 @@ class EpubHtml(EpubItem):
 
         self.links = []
         self.properties = []
+        self.metas = [{"charset": "utf-8"}]
 
     def is_chapter(self):
         """
@@ -396,6 +397,9 @@ class EpubHtml(EpubItem):
                 _lnk.text = ''
             else:
                 _lnk = etree.SubElement(_head, 'link', lnk)
+
+        for mta in self.metas:
+            mta = etree.SubElement(_head, "meta", mta)
 
         # this should not be like this
         # head = html_root.find('head')
@@ -815,9 +819,10 @@ class EpubWriter(object):
         'landmark_title': 'Guide'
     }
 
-    def __init__(self, name, book, options=None):
+    def __init__(self, name, book, options=None, spine_properties={}):
         self.file_name = name
         self.book = book
+        self.spine_properties = spine_properties
 
         self.options = dict(self.DEFAULT_OPTIONS)
         if options:
@@ -861,12 +866,12 @@ class EpubWriter(object):
         #                 nsmap[n_id.lower()] = NAMESPACES[n_id]
         metadata = etree.SubElement(root, 'metadata', nsmap=nsmap)
 
-        el = etree.SubElement(metadata, 'meta', {'property': 'dcterms:modified'})
+        el = etree.SubElement(metadata, 'meta', {'property':'dcterms:modified'})
         if 'mtime' in self.options:
             mtime = self.options['mtime']
         else:
-            import datetime
-            mtime = datetime.datetime.now()
+            from datetime import datetime, timezone
+            mtime = datetime.now(timezone.utc).isoformat()
         el.text = mtime.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         for ns_name, values in six.iteritems(self.book.metadata):
@@ -905,7 +910,6 @@ class EpubWriter(object):
         for item in self.book.get_items():
             if not item.manifest:
                 continue
-
             if isinstance(item, EpubNav):
                 etree.SubElement(manifest, 'item', {'href': item.get_name(),
                                                     'id': item.id,
@@ -933,7 +937,8 @@ class EpubWriter(object):
                 etree.SubElement(manifest, 'item', opts)
 
         # SPINE
-        spine = etree.SubElement(root, 'spine', {'toc': _ncx_id or 'ncx'})
+        self.spine_properties.update({'toc': _ncx_id or 'ncx'})
+        spine = etree.SubElement(root, 'spine', self.spine_properties)
 
         for _item in self.book.spine:
             # this is for now
@@ -970,6 +975,9 @@ class EpubWriter(object):
                         opts['linear'] = 'no'
                 except:
                     pass
+
+            if hasattr(item, 'properties') and len(item.properties) > 0:
+                opts['properties' ] = ' '.join(item.properties)
 
             etree.SubElement(spine, 'itemref', opts)
 
@@ -1187,7 +1195,10 @@ class EpubWriter(object):
             elif item.manifest:
                 self.out.writestr('%s/%s' % (self.book.FOLDER_NAME, item.file_name), item.get_content())
             else:
-                self.out.writestr('%s' % item.file_name, item.get_content())
+                if item.meta:
+                    self.out.writestr('%s/%s' % ("META-INF", item.file_name), item.get_content())
+                else:
+                    self.out.writestr('%s/%s' % (self.book.FOLDER_NAME, item.file_name), item.get_content())
 
     def write(self):
         # check for the option allowZip64
@@ -1491,7 +1502,7 @@ class EpubReader(object):
 
 # WRITE
 
-def write_epub(name, book, options=None):
+def write_epub(name, book, options = None, spine_properties={}):
     """
     Creates epub file with the content defined in EpubBook.
 
@@ -1502,7 +1513,7 @@ def write_epub(name, book, options=None):
       - book: instance of EpubBook
       - options: extra opions as dictionary (optional)
     """
-    epub = EpubWriter(name, book, options)
+    epub = EpubWriter(name, book, options, spine_properties=spine_properties)
 
     epub.process()
 
