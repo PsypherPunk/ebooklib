@@ -873,8 +873,8 @@ class EpubWriter(object):
             mtime = self.options['mtime']
         else:
             from datetime import datetime, timezone
-            mtime = datetime.now(timezone.utc).isoformat()
-        el.text = mtime.strftime('%Y-%m-%dT%H:%M:%SZ')
+            mtime = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        el.text = mtime
 
         for ns_name, values in six.iteritems(self.book.metadata):
             if ns_name == NAMESPACES['OPF']:
@@ -933,8 +933,9 @@ class EpubWriter(object):
                         'id': item.id,
                         'media-type': item.media_type}
 
-                if hasattr(item, 'properties') and len(item.properties) > 0:
-                    opts['properties'] = ' '.join(item.properties)
+# TODO: Should this be here?!
+#                if hasattr(item, 'properties') and len(item.properties) > 0:
+#                    opts['properties'] = ' '.join(item.properties)
 
                 etree.SubElement(manifest, 'item', opts)
 
