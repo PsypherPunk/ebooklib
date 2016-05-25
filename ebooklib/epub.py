@@ -578,7 +578,7 @@ class EpubBook(object):
 
         self.title = title
 
-        self.add_metadata('DC', 'title', self.title)
+        self.add_metadata('DC', 'title', self.title, {"id": "main"})
 
     def set_language(self, lang):
         """
