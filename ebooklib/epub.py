@@ -1505,7 +1505,7 @@ class EpubReader(object):
 
 # WRITE
 
-def write_epub(name, book, options = None, spine_properties={}):
+def write_epub(name, book, options = None, spine_properties={}, direction="ltr"):
     """
     Creates epub file with the content defined in EpubBook.
 
@@ -1516,7 +1516,7 @@ def write_epub(name, book, options = None, spine_properties={}):
       - book: instance of EpubBook
       - options: extra opions as dictionary (optional)
     """
-    epub = EpubWriter(name, book, options, spine_properties=spine_properties)
+    epub = EpubWriter(name, book, options, spine_properties=spine_properties, direction=direction)
 
     epub.process()
 
